@@ -170,6 +170,7 @@ Mehr Rollen braucht der MVP nicht.
 | `docs/EXCEL-MAPPING.md` | vollständige Mappenanalyse und Feldabbildung |
 | `docs/DECISIONS.md` | Entscheidungen, offene Punkte, Risiken |
 | `docs/MVP-BACKLOG.md` | Epics, Aufwände, Abhängigkeiten, Sprint 1 |
+| `docs/BETRIEB-ZUGANG.md` | Zugangswege vom Handy, Konfiguration, Prüfprotokoll (D-10) |
 | `werkzeuge/mappe_analysieren.py` | reproduzierbarer Nachweis der Mappenstruktur |
 | `werkzeuge/mappe_anonymisieren.py` | erzeugt die anonymisierte Referenzmappe (D-15) |
 
@@ -184,7 +185,11 @@ Vollständig mit Optionen und Empfehlung in `docs/DECISIONS.md`:
 | **D-02** | Wohin mit Menge und Einheit? | Datenmodell, Export |
 | **D-03** | Anfang/Ende erfassen statt Stundenzahl? | Sprachdialog, UX |
 | **D-09** | Transkription in der Cloud oder im Haus? | Datenschutz, Betrieb |
-| **D-10** | Wie erreichen die Handys den Server? | Nutzbarkeit überhaupt |
+| **D-10** | Tailscale, Cloudflare Tunnel oder eigene Domain? | Nutzbarkeit überhaupt, **und** der Umfang der Anmeldung (D-11) |
 
 D-10 ist kein Betriebsdetail: Ohne HTTPS geben iOS und Android das Mikrofon
-nicht frei. Ohne Antwort auf D-10 ist die App auf dem Handy nicht benutzbar.
+nicht frei. Da die Erfassung **auf der Baustelle** stattfindet, scheidet die
+billigste Lösung — nur im Firmen-WLAN erreichbar — aus. Drei Wege sind in
+`docs/BETRIEB-ZUGANG.md` mit Konfiguration und Prüfprotokoll ausgearbeitet;
+die Wahl bestimmt über D-11 auch die Länge der PIN und damit den Aufwand
+von EPIC 01.

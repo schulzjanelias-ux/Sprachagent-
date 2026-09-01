@@ -195,8 +195,13 @@ befüllten Mappenkopie läuft durch (Akzeptanzkriterium 15).
 
 ## EPIC 11 · Betrieb — P1 · 1,5 PT
 
-Systemd-Unit, Reverse-Proxy-Beispiel, tägliches Backup per `VACUUM INTO`,
+Systemd-Unit, Zugang nach D-10 einrichten (Konfiguration für alle drei Wege
+liegt in `docs/BETRIEB-ZUGANG.md` bereit), tägliches Backup per `VACUUM INTO`,
 `/api/status`, Betriebsanleitung, Einrichtungsanleitung für die Handys.
+
+Enthält das **Prüfprotokoll aus `BETRIEB-ZUGANG.md` §7**: neun Schritte auf
+einem echten iPhone und einem echten Android-Gerät, im Mobilfunknetz. Ohne
+diesen Durchlauf gilt EPIC 02 nicht als abgenommen.
 
 **Fertig, wenn:** Neuaufsetzen auf einem leeren Rechner gelingt allein anhand
 der README; nach Neustart läuft der Dienst wieder; ein Backup lässt sich
@@ -241,10 +246,15 @@ und Pilot (12, 11, 13).
 
 | ID | Frage | Blockiert |
 |---|---|---|
-| **D-10** | Wie erreichen die Handys den Server? | EPIC 02 — ohne HTTPS kein Mikrofon |
+| **D-10** | Tailscale, Cloudflare Tunnel oder eigene Domain? | EPIC 02 (ohne HTTPS kein Mikrofon) **und EPIC 01** (PIN-Länge, ggf. Gerätebindung: bis zu +1 PT) |
 | **D-09** | AVV für die Transkription, oder lokal starten? | EPIC 03, Pilotbeginn |
 | **D-02** | Mengen als Text in Spalte I, oder rechenbar? | EPIC 08/09, Umfang |
 | **D-03** | Abgeleiteter Regelbeginn zulässig? | EPIC 04/05, Dialoggestaltung |
 
 D-02 und D-03 blockieren Sprint 1 nicht — das Datenmodell trägt beide Varianten.
-**D-10 und D-09 sollten vor Sprint 2 beantwortet sein.**
+**D-10 und D-09 müssen vor Sprint 2 beantwortet sein.**
+
+Bei D-10 ist die Vorarbeit erledigt: Alle drei Wege sind in
+`docs/BETRIEB-ZUGANG.md` mit lauffähiger Konfiguration ausgearbeitet, die App
+wird proxy-neutral gebaut. Offen ist allein die Wahl — und die hängt an einer
+nichttechnischen Frage: **Diensthandys oder private Handys?**

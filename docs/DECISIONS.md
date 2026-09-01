@@ -247,26 +247,48 @@ unnötig speichern). Aufbewahrt wird der Transkripttext als Nachweis.
 
 ---
 
-## D-10 · Erreichbarkeit der App vom Handy — DECISION REQUIRED · BLOCKER
+## D-10 · Erreichbarkeit der App vom Handy — TEILWEISE ENTSCHIEDEN · BLOCKER
 
 **Das ist kein Betriebsdetail.** Browser geben das Mikrofon nur in einem
-sicheren Kontext frei. Über `http://192.168.x.x` funktioniert die Aufnahme
-weder in iOS Safari noch in Android Chrome — die App ist dann schlicht
-unbenutzbar, unabhängig von der Codequalität.
+sicheren Kontext frei. Über `http://192.168.x.x` ist `navigator.mediaDevices`
+bereits `undefined` — die Aufnahme startet weder in iOS Safari noch in Android
+Chrome. Dafür gibt es keinen Workaround.
 
-| Option | Aufwand | Bewertung |
-|---|---|---|
-| **Tailscale** (empfohlen) | gering | HTTPS-Zertifikat inklusive, kein offener Port, Geräteverwaltung eingebaut |
-| Domain + Caddy/Let's Encrypt | mittel | sauber, erfordert DNS und eine Freigabe nach außen |
-| Selbstsigniertes Zertifikat | gering, dauerhaft lästig | muss auf jedem Diensthandy einzeln installiert werden |
+**Randbedingung geklärt (HAG, 01.09.2026):** Die Mitarbeiter erfassen ihren
+Bericht **auf der Baustelle beziehungsweise unterwegs**, im Mobilfunknetz.
 
-**Empfehlung: Tailscale.** Die App wird so gebaut, dass sie hinter jedem
-Reverse-Proxy läuft (`X-Forwarded-Proto` respektiert, keine absoluten URLs),
-und meldet beim Start eine Warnung, wenn sie ohne sicheren Kontext erreichbar
-ist. Das Frontend zeigt in diesem Fall eine verständliche deutsche Meldung
-statt eines stummen Fehlers.
+Damit entfällt die billigste Lösung: Ein selbstsigniertes Zertifikat oder ein
+Reverse-Proxy nur im Firmen-WLAN kostet nichts und braucht keinen Anbieter,
+hilft aber nicht, wenn das Handy gar nicht im Firmennetz ist. Der Server muss
+von außerhalb erreichbar sein.
 
-**Diese Entscheidung muss vor dem Pilot fallen.**
+**Verbleibende Optionen** — vollständig bewertet, mit lauffähiger
+Beispielkonfiguration und Prüfprotokoll in **`docs/BETRIEB-ZUGANG.md`**:
+
+| | Option | Client auf dem Handy | Dritter sieht die Aufnahmen | Offener Port |
+|---|---|---|---|---|
+| **A** | Tailscale (VPN) | ja, VPN-App | nein | nein |
+| **B** | Cloudflare Tunnel | nein | **ja**, Cloudflare beendet TLS | nein |
+| **C** | Eigene Domain + Caddy | nein | nein | **ja**, 443 |
+
+**Die entscheidende Frage ist nicht technisch:** Gibt es Diensthandys oder
+werden private Handys genutzt? Eine VPN-App auf Privatgeräten zu verlangen,
+berührt die Mitbestimmung und wird erfahrungsgemäß schlecht angenommen.
+
+- **Diensthandys → A.** Beste Datenlage, kein zweiter Auftragsverarbeiter.
+- **Privathandys → B** für den Pilot. Nichts zu installieren, dafür ein
+  zweiter AVV neben D-09.
+- **C** ist die richtige Wahl für den Dauerbetrieb mit eigener IT, aber der
+  schlechteste Einstieg für einen Pilot.
+
+**Bereits entschieden und unabhängig von der Wahl umgesetzt:** Die App wird
+proxy-neutral gebaut — Bindung an `127.0.0.1`, `--proxy-headers`, keine
+absoluten URLs, `Secure`-Cookie, Startwarnung ohne TLS und eine verständliche
+deutsche Meldung im Frontend statt eines stummen Fehlers, mit manuellem
+Formular als Rückfallebene. Alle drei Optionen laufen damit ohne Codeänderung.
+
+**Offen:** die Wahl zwischen A, B und C. Sie muss vor Sprint 2 fallen — nicht
+wegen des Proxys, sondern wegen der Rückwirkung auf D-11.
 
 ---
 
@@ -282,6 +304,24 @@ mit Sonderzeichenzwang würde auf Zetteln am Bildschirm enden.
 
 Absicherung gegen Erraten: Verzögerung nach drei Fehlversuchen, Sperre nach
 zehn für 15 Minuten, protokolliert ohne PIN.
+
+### Abhängig von D-10 — die PIN-Länge ist keine freie Entscheidung
+
+Eine vierstellige PIN ist eine gute Wahl **hinter einem VPN**. Am offenen
+Internet ist sie es nicht: Der Nutzername steht in einer Auswahlliste und ist
+damit kein Geheimnis — 28 bekannte Nachnamen mal 10.000 PINs ist ein
+überschaubarer Suchraum für jeden, der die Adresse kennt.
+
+| Zugangsweg aus D-10 | Anmeldung |
+|---|---|
+| **A · Tailscale** | vierstellige PIN genügt; das VPN ist die erste Schranke |
+| **B · Cloudflare Tunnel** | **sechsstellige** PIN, Ratenbegrenzung je Konto *und* je IP; Cloudflare Access empfohlen |
+| **C · offene Domain** | wie B, zusätzlich Gerätebindung: erste Anmeldung eines Geräts wird freigegeben, danach langlebiges Token |
+
+Zwischen A und C liegen rund ein Personentag Mehraufwand in EPIC 01.
+Gerätebindung und verschärfte Ratenbegrenzung verändern das Datenmodell der
+Sitzungen und sind kein Nachrüstdetail. **Deshalb blockiert D-10 den Sprint 2,
+nicht erst die Auslieferung.**
 
 ---
 

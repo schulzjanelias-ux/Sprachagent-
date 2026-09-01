@@ -27,6 +27,7 @@ befüllt werden ausschließlich Kopien.
 | [`docs/EXCEL-MAPPING.md`](docs/EXCEL-MAPPING.md) | vollständige Mappenanalyse und Feldabbildung |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Entscheidungen, offene Punkte, Risiken |
 | [`docs/MVP-BACKLOG.md`](docs/MVP-BACKLOG.md) | Epics, Aufwände, Sprint 1 |
+| [`docs/BETRIEB-ZUGANG.md`](docs/BETRIEB-ZUGANG.md) | Zugangswege vom Handy, Konfiguration, Prüfprotokoll |
 
 ## Analyse nachvollziehen
 
@@ -58,7 +59,7 @@ gelten unverändert.
 
 | ID | Frage |
 |---|---|
-| **D-10** | Wie erreichen die Handys den Server? Ohne HTTPS geben iOS und Android das Mikrofon nicht frei — die App wäre unbenutzbar. |
+| **D-10** | Tailscale, Cloudflare Tunnel oder eigene Domain? Drei Wege sind in [`docs/BETRIEB-ZUGANG.md`](docs/BETRIEB-ZUGANG.md) ausgearbeitet. Entscheidende Frage: Diensthandys oder private Handys? |
 | **D-09** | Auftragsverarbeitungsvertrag für die Transkription, oder Start mit lokalem Modell? |
 | **D-02** | Mengen als Text in Spalte I, oder rechenbar in einem neuen Blatt? |
 | **D-03** | Ist ein abgeleiteter Regelarbeitsbeginn zulässig? |
