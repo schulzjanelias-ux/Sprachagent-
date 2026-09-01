@@ -1,0 +1,16 @@
+# Laufzeit
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+pydantic-settings>=2.6
+sqlalchemy>=2.0
+argon2-cffi>=23.1          # Passwort-Hashing (D-11)
+itsdangerous>=2.2          # signiertes Session-Cookie
+python-multipart>=0.0.12   # Audio-Upload
+pyyaml>=6.0                # konfiguration/*.yaml
+openpyxl>=3.1              # Bauablaufmappe
+filelock>=3.16             # gleichzeitiger Zugriff auf Exportdateien
+
+# Entwicklung
+pytest>=8.0
+httpx>=0.27                # TestClient
