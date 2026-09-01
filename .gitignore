@@ -1,0 +1,36 @@
+# Geheimnisse und Konfiguration mit Personenbezug
+.env
+.env.*
+!.env.example
+konfiguration/benutzer.yaml
+konfiguration/projekte.yaml
+
+# Laufzeitdaten
+daten/
+*.db
+*.db-wal
+*.db-shm
+backups/
+export/
+*_befuellt_*.xlsx
+_roundtrip_pruefung.xlsx
+
+# Excel-Sperrdateien
+~$*.xlsx
+.~lock.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editor / System
+.DS_Store
+.idea/
+.vscode/
