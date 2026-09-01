@@ -247,81 +247,102 @@ unnötig speichern). Aufbewahrt wird der Transkripttext als Nachweis.
 
 ---
 
-## D-10 · Erreichbarkeit der App vom Handy — TEILWEISE ENTSCHIEDEN · BLOCKER
+## D-10 · Erreichbarkeit der App vom Handy — ENTSCHIEDEN
 
 **Das ist kein Betriebsdetail.** Browser geben das Mikrofon nur in einem
 sicheren Kontext frei. Über `http://192.168.x.x` ist `navigator.mediaDevices`
 bereits `undefined` — die Aufnahme startet weder in iOS Safari noch in Android
 Chrome. Dafür gibt es keinen Workaround.
 
-**Randbedingung geklärt (HAG, 01.09.2026):** Die Mitarbeiter erfassen ihren
-Bericht **auf der Baustelle beziehungsweise unterwegs**, im Mobilfunknetz.
+**Randbedingungen (HAG, 01.09.2026):**
 
-Damit entfällt die billigste Lösung: Ein selbstsigniertes Zertifikat oder ein
-Reverse-Proxy nur im Firmen-WLAN kostet nichts und braucht keinen Anbieter,
-hilft aber nicht, wenn das Handy gar nicht im Firmennetz ist. Der Server muss
-von außerhalb erreichbar sein.
+1. Die Erfassung findet **auf der Baustelle** statt, im Mobilfunknetz.
+2. Eine **öffentlich erreichbare Web-App mit Anmeldename und Passwort** ist
+   ausreichend.
 
-**Verbleibende Optionen** — vollständig bewertet, mit lauffähiger
-Beispielkonfiguration und Prüfprotokoll in **`docs/BETRIEB-ZUGANG.md`**:
+**Entscheidung.** Die App wird über eine reguläre HTTPS-Adresse
+veröffentlicht. Kein VPN, kein Client auf dem Handy: Der Mitarbeiter öffnet
+eine Adresse und meldet sich an. Damit entfällt Option A (Tailscale) — nicht
+aus technischen Gründen, sondern weil eine VPN-App auf den Telefonen den
+niedrigschwelligen Zugang zunichtemachen würde, von dem der Erfolg des
+Produkts abhängt.
 
-| | Option | Client auf dem Handy | Dritter sieht die Aufnahmen | Offener Port |
-|---|---|---|---|---|
-| **A** | Tailscale (VPN) | ja, VPN-App | nein | nein |
-| **B** | Cloudflare Tunnel | nein | **ja**, Cloudflare beendet TLS | nein |
-| **C** | Eigene Domain + Caddy | nein | nein | **ja**, 443 |
+**Zwei gleichwertige Wege dorthin**, beide in `docs/BETRIEB-ZUGANG.md` mit
+lauffähiger Konfiguration:
 
-**Die entscheidende Frage ist nicht technisch:** Gibt es Diensthandys oder
-werden private Handys genutzt? Eine VPN-App auf Privatgeräten zu verlangen,
-berührt die Mitbestimmung und wird erfahrungsgemäß schlecht angenommen.
+| | Weg | Offener Port | Dritter im Datenpfad |
+|---|---|---|---|
+| **B** | Cloudflare Tunnel | nein | **ja** — Cloudflare beendet TLS, AVV nötig |
+| **C** | Eigene Domain + Caddy | **ja**, 443 | nein |
 
-- **Diensthandys → A.** Beste Datenlage, kein zweiter Auftragsverarbeiter.
-- **Privathandys → B** für den Pilot. Nichts zu installieren, dafür ein
-  zweiter AVV neben D-09.
-- **C** ist die richtige Wahl für den Dauerbetrieb mit eigener IT, aber der
-  schlechteste Einstieg für einen Pilot.
+Die Wahl zwischen B und C ist eine reine Betriebsfrage der HAG-IT und berührt
+den Code nicht: Die App ist proxy-neutral gebaut — Bindung an `127.0.0.1`,
+`--proxy-headers`, keine absoluten URLs, `Secure`-Cookie, Startwarnung ohne
+TLS. Sie läuft hinter beiden ohne eine Zeile Änderung.
 
-**Bereits entschieden und unabhängig von der Wahl umgesetzt:** Die App wird
-proxy-neutral gebaut — Bindung an `127.0.0.1`, `--proxy-headers`, keine
-absoluten URLs, `Secure`-Cookie, Startwarnung ohne TLS und eine verständliche
-deutsche Meldung im Frontend statt eines stummen Fehlers, mit manuellem
-Formular als Rückfallebene. Alle drei Optionen laufen damit ohne Codeänderung.
+**Empfehlung für den Pilot: B.** Kein offener Port am Firmenrechner, in einer
+Stunde eingerichtet. Der AVV mit Cloudflare kommt ohnehin neben D-09 auf den
+Tisch. Für den Dauerbetrieb ist C die sauberere Wahl, sobald die IT den Dienst
+betreuen will.
 
-**Offen:** die Wahl zwischen A, B und C. Sie muss vor Sprint 2 fallen — nicht
-wegen des Proxys, sondern wegen der Rückwirkung auf D-11.
+**Folge, die nicht verhandelbar ist:** Ein öffentlich erreichbarer Dienst
+verändert die Anforderungen an die Anmeldung — siehe D-11.
 
 ---
 
-## D-11 · Authentifizierung — ENTSCHIEDEN
+## D-11 · Authentifizierung — ENTSCHIEDEN (ersetzt die PIN-Variante)
 
-Name aus Auswahlliste + vierstellige PIN. PIN als bcrypt-Hash in
-`konfiguration/benutzer.yaml`, niemals im Klartext, niemals im Code.
-Session als signiertes, `HttpOnly`- und `Secure`-Cookie, 30 Tage, rollierend
-verlängert — der Mitarbeiter meldet sich nicht täglich neu an (Brief §18).
+**Vorgabe der HAG:** Anmeldename und Passwort genügen.
 
-Passend zum Nutzerkreis: 28 Personen, Baustelle, Handschuhe. Ein Passwortfeld
-mit Sonderzeichenzwang würde auf Zetteln am Bildschirm enden.
+Das ist die richtige Entscheidung, und sie räumt ein Problem aus dem Weg, das
+die ursprünglich geplante vierstellige PIN am offenen Internet gehabt hätte:
+10.000 Kombinationen sind kein Schutz für einen Dienst, den jeder erreichen
+kann.
 
-Absicherung gegen Erraten: Verzögerung nach drei Fehlversuchen, Sperre nach
-zehn für 15 Minuten, protokolliert ohne PIN.
+### Festlegungen
 
-### Abhängig von D-10 — die PIN-Länge ist keine freie Entscheidung
-
-Eine vierstellige PIN ist eine gute Wahl **hinter einem VPN**. Am offenen
-Internet ist sie es nicht: Der Nutzername steht in einer Auswahlliste und ist
-damit kein Geheimnis — 28 bekannte Nachnamen mal 10.000 PINs ist ein
-überschaubarer Suchraum für jeden, der die Adresse kennt.
-
-| Zugangsweg aus D-10 | Anmeldung |
+| Punkt | Umsetzung |
 |---|---|
-| **A · Tailscale** | vierstellige PIN genügt; das VPN ist die erste Schranke |
-| **B · Cloudflare Tunnel** | **sechsstellige** PIN, Ratenbegrenzung je Konto *und* je IP; Cloudflare Access empfohlen |
-| **C · offene Domain** | wie B, zusätzlich Gerätebindung: erste Anmeldung eines Geräts wird freigegeben, danach langlebiges Token |
+| Anmeldung | Anmeldename (frei wählbar, nicht der Excel-Name) + Passwort |
+| Passwortlänge | mindestens 10 Zeichen, keine Zeichenklassenpflicht |
+| Speicherung | Argon2id, `konfiguration/benutzer.yaml`, nie im Klartext, nie im Code |
+| Erstvergabe | Bauleitung legt Konto mit Einmalpasswort an, Wechsel bei der ersten Anmeldung erzwungen |
+| Zurücksetzen | durch die Bauleitung über `benutzer-passwort-neu`; kein Selbstbedienungsweg per E-Mail |
+| Sitzung | signiertes Cookie, `HttpOnly`, `Secure`, `SameSite=Lax`, 30 Tage rollierend |
+| Ratenbegrenzung | je Konto **und** je IP; Verzögerung ab drei Fehlversuchen, Sperre nach zehn für 15 Minuten |
+| Protokoll | Zeitpunkt, Konto, Ergebnis — niemals das Passwort, niemals ein Teil davon |
 
-Zwischen A und C liegen rund ein Personentag Mehraufwand in EPIC 01.
-Gerätebindung und verschärfte Ratenbegrenzung verändern das Datenmodell der
-Sitzungen und sind kein Nachrüstdetail. **Deshalb blockiert D-10 den Sprint 2,
-nicht erst die Auslieferung.**
+Keine Zeichenklassenpflicht, dafür Mindestlänge: Erzwungene Sonderzeichen
+erzeugen `Sommer2026!` und Zettel am Bildschirm. Länge schützt besser und ist
+auf einer Baustelle mit Handschuhen eher tippbar.
+
+### Die Anmeldung zeigt keine Mitarbeiterliste mehr
+
+Ursprünglich war der Name als **Auswahlliste** geplant — bequem bei 28
+Personen und unbedenklich, solange die App nur intern erreichbar ist.
+
+Öffentlich erreichbar ist dieselbe Auswahlliste zweierlei: eine
+Veröffentlichung der Belegschaft und die halbe Zugangsinformation, frei Haus.
+Deshalb:
+
+- Der Anmeldename wird **getippt**, nicht ausgewählt
+- Die Endpunkte `/api/mitarbeiter` und `/api/projekte` liefern erst **nach**
+  erfolgreicher Anmeldung Daten
+- Die Fehlermeldung lautet immer `Anmeldename oder Passwort ist falsch` —
+  nie „Benutzer unbekannt", das würde gültige Namen verraten
+- Fehlversuche brauchen unabhängig vom Grund gleich lang (kein Zeitunterschied
+  zwischen unbekanntem Konto und falschem Passwort)
+
+Der Anmeldename ist bewusst **nicht** der `excel_name` aus der
+Mitarbeiterliste der Mappe. Die Zuordnung passiert intern; damit ist aus einem
+erratenen Anmeldenamen nicht automatisch der Klarname ableitbar.
+
+### Was das für den Aufwand bedeutet
+
+EPIC 01 bleibt bei 1,5 PT. Der Mehraufwand für Argon2id, doppelte
+Ratenbegrenzung und den erzwungenen Passwortwechsel wird dadurch aufgewogen,
+dass die in `BETRIEB-ZUGANG.md` §5 skizzierte **Gerätebindung entfällt** — sie
+war nur nötig, um eine schwache PIN am offenen Netz abzustützen.
 
 ---
 

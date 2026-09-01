@@ -135,56 +135,59 @@ zu, es wird aber ein API-Zugang beim DNS-Anbieter gebraucht.
 
 ---
 
-## 4. Die eine Frage, die entscheidet
+## 4. Entscheidung der HAG
 
-```
-Nutzen die Mitarbeiter Diensthandys oder private Handys?
+> **Eine öffentlich erreichbare Web-App mit Anmeldename und Passwort ist
+> ausreichend.** (HAG, 01.09.2026)
 
-  Diensthandys ──────────────► Option A (Tailscale)
-                               VPN-App zumutbar, beste Datenlage
+Damit entfällt **Option A (Tailscale)** — nicht aus technischen Gründen,
+sondern weil eine VPN-App auf den Telefonen genau den niedrigschwelligen
+Zugang zunichtemachen würde, von dem der Erfolg des Produkts abhängt: App
+öffnen, sprechen, fertig.
 
-  Private Handys ────────────► Option B (Cloudflare Tunnel)
-                               VPN auf Privatgeräten ist ein
-                               Mitbestimmungs- und Akzeptanzthema;
-                               dafür ein zweiter AVV
+Es bleiben **B** und **C**. Beide erfüllen die Vorgabe, beide sind ohne
+Codeänderung lauffähig. Die Wahl ist eine reine Betriebsfrage der HAG-IT:
 
-  Eigene IT vorhanden und ───► Option C (Caddy)
-  offener Dienst gewollt       plus die Härtung aus Abschnitt 5
-```
+| Frage | Antwort führt zu |
+|---|---|
+| Soll am Firmenrechner kein Port nach außen offen sein? | **B** (Cloudflare Tunnel) |
+| Soll kein Dritter die Aufnahmen im Klartext sehen? | **C** (Domain + Caddy) |
+| Gibt es niemanden, der einen exponierten Dienst pflegt? | **B** |
+| Läuft ohnehin schon eine betreute Serverumgebung? | **C** |
 
-Eine VPN-App auf privaten Telefonen zu verlangen, ist keine rein technische
-Frage: Sie berührt die Mitbestimmung und wird erfahrungsgemäß schlecht
-angenommen. Wenn die HAG keine Diensthandys stellt, ist Option A praktisch
-kaum durchsetzbar — unabhängig davon, dass sie technisch die sauberste wäre.
+**Empfehlung für den Pilot: B.** In etwa einer Stunde eingerichtet, kein
+offener Port, kein Wartungsaufwand. Der AVV mit Cloudflare kommt neben D-09
+ohnehin auf den Tisch. Für den Dauerbetrieb ist C die sauberere Wahl, sobald
+die IT den Dienst betreuen möchte — der Wechsel ist später eine
+Konfigurationsänderung, keine Migration.
 
 ---
 
-## 5. Folge für die Anmeldung: D-10 verändert D-11
+## 5. Was aus dem öffentlichen Zugang für die Anmeldung folgt
 
-Bisher vorgesehen (D-11): Name aus einer Liste plus **vierstellige PIN**.
+Ursprünglich vorgesehen war eine vierstellige PIN mit Namensauswahlliste. Das
+wäre hinter einem VPN angemessen gewesen, am offenen Internet nicht:
 
-Das ist eine gute Entscheidung — **hinter einem VPN.** Am offenen Internet ist
-es keine mehr:
-
-> 28 bekannte Nachnamen × 10.000 PINs. Der Nutzername steht in einer
-> Auswahlliste, ist also kein Geheimnis. Wer die Adresse kennt, hat einen
+> 28 bekannte Nachnamen × 10.000 PINs. Der Name stünde in einer Auswahlliste
+> und wäre damit kein Geheimnis. Wer die Adresse kennt, hätte einen
 > überschaubaren Suchraum vor sich.
 
-Deshalb gilt:
+Die Vorgabe der HAG — **Anmeldename und Passwort** — löst genau das. Daraus
+folgen drei Festlegungen (vollständig in `DECISIONS.md` · D-11):
 
-| Zugangsweg | Anforderung an die Anmeldung |
-|---|---|
-| **A · Tailscale** | Vierstellige PIN genügt. Das VPN ist die erste Schranke, die PIN unterscheidet nur noch die Personen untereinander. |
-| **B · Cloudflare Tunnel** | PIN **sechsstellig**, strikte Ratenbegrenzung je Konto und je IP, Sperre nach zehn Fehlversuchen. Zusätzlich empfohlen: Cloudflare Access als vorgelagerte Schranke. |
-| **C · Caddy, offen** | Wie B, zusätzlich Gerätebindung: Die erste Anmeldung eines Geräts wird durch die Bauleitung freigegeben, danach trägt das Gerät ein langlebiges Token. |
+1. **Passwort statt PIN**, mindestens 10 Zeichen, Argon2id, keine
+   Zeichenklassenpflicht. Länge schützt besser als Sonderzeichen und ist mit
+   Handschuhen eher tippbar.
+2. **Keine Mitarbeiterliste auf der Anmeldeseite.** Der Name wird getippt.
+   Eine öffentlich abrufbare Auswahlliste wäre zweierlei zugleich: eine
+   Veröffentlichung der Belegschaft und die halbe Zugangsinformation.
+   `/api/mitarbeiter` und `/api/projekte` antworten erst nach der Anmeldung.
+3. **Keine Auskunft über gültige Konten.** Immer dieselbe Meldung
+   (`Anmeldename oder Passwort ist falsch`), immer dieselbe Antwortzeit, plus
+   Ratenbegrenzung je Konto **und** je IP.
 
-**Diese Kopplung ist der eigentliche Grund, warum D-10 vor Sprint 2 fallen
-muss.** Der Aufwand für EPIC 01 unterscheidet sich zwischen Option A und
-Option C um etwa einen Personentag — Gerätebindung und verschärfte
-Ratenbegrenzung sind kein Nachrüstdetail, sondern verändern das Datenmodell
-der Sitzungen.
-
----
+Die in einer früheren Fassung erwogene Gerätebindung entfällt — sie war nur
+nötig, um eine schwache PIN am offenen Netz abzustützen.
 
 ## 6. Was die App unabhängig von der Entscheidung mitbringt
 
@@ -256,21 +259,12 @@ gebaut ist.
 
 ---
 
-## 8. Empfehlung
+## 8. Stand
 
-**Gibt es Diensthandys: Option A (Tailscale).** Beste Datenlage, kein
-zusätzlicher Auftragsverarbeiter, die vierstellige PIN aus D-11 bleibt
-ausreichend.
+**D-10 ist entschieden:** öffentlich erreichbare Web-App, Anmeldename und
+Passwort, kein VPN, kein Client auf dem Handy.
 
-**Gibt es keine: Option B (Cloudflare Tunnel)** für den Pilot, mit
-sechsstelliger PIN und Ratenbegrenzung. Der zweite AVV ist der Preis dafür,
-dass die Mitarbeiter nichts installieren müssen — und Akzeptanz entscheidet
-bei diesem Produkt über Erfolg oder Misserfolg.
-
-Option C ist die richtige Wahl für den Dauerbetrieb, wenn die HAG-IT den
-Dienst ohnehin betreuen will. Für einen Pilot mit wenigen Nutzern ist der
-Betreuungsaufwand aber der schlechteste Einstieg.
-
-**Für Sprint 1 wird nichts davon gebraucht.** Die Entscheidung muss vor
-Sprint 2 (EPIC 02, Sprachaufnahme) fallen, weil sie über EPIC 01 den Umfang
-der Anmeldung mitbestimmt.
+**Offen und rein betrieblich:** B oder C. Beide Konfigurationen liegen oben
+fertig vor, die App läuft hinter beiden unverändert. Diese Wahl blockiert
+keinen Sprint — sie muss erst stehen, wenn der Pilot auf echte Geräte geht,
+und dann greift das Prüfprotokoll aus §7.

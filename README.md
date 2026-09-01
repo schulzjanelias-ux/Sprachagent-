@@ -55,11 +55,21 @@ gelten unverändert.
 3. **Eine Mappe ist ein Bauvorhaben.** Bauvorhaben, Baubeginn und Bauende sind
    Einzelzellen. → D-04
 
+## Entschieden
+
+**D-10 · Zugang.** Öffentlich erreichbare Web-App mit Anmeldename und Passwort,
+kein VPN, kein Client auf dem Handy. Cloudflare Tunnel und eigene Domain sind
+beide möglich und in [`docs/BETRIEB-ZUGANG.md`](docs/BETRIEB-ZUGANG.md)
+konfiguriert — die App ist proxy-neutral.
+
+**D-11 · Anmeldung.** Passwort statt PIN (min. 10 Zeichen, Argon2id). Weil die
+App öffentlich erreichbar ist, zeigt die Anmeldemaske **keine
+Mitarbeiterliste**; der Name wird getippt.
+
 ## Offen, bevor gebaut wird
 
 | ID | Frage |
 |---|---|
-| **D-10** | Tailscale, Cloudflare Tunnel oder eigene Domain? Drei Wege sind in [`docs/BETRIEB-ZUGANG.md`](docs/BETRIEB-ZUGANG.md) ausgearbeitet. Entscheidende Frage: Diensthandys oder private Handys? |
 | **D-09** | Auftragsverarbeitungsvertrag für die Transkription, oder Start mit lokalem Modell? |
 | **D-02** | Mengen als Text in Spalte I, oder rechenbar in einem neuen Blatt? |
 | **D-03** | Ist ein abgeleiteter Regelarbeitsbeginn zulässig? |

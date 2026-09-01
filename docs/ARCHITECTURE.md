@@ -39,10 +39,10 @@ Sprachagent-/
 │  ├─ datenbank.py                Engine, Session, Migrationen
 │  ├─ modelle.py                  SQLAlchemy-Tabellen
 │  ├─ schemas.py                  Pydantic: Ein-/Ausgabe, LLM-Schema
-│  ├─ sicherheit.py               PIN-Prüfung, Cookie, Ratenbegrenzung
+│  ├─ sicherheit.py               Passwortprüfung, Cookie, Ratenbegrenzung
 │  ├─ abhaengigkeiten.py          aktueller Benutzer, Projektzugriff
 │  ├─ routen/
-│  │   ├─ anmeldung.py            POST /api/anmelden, /api/abmelden
+│  │   ├─ anmeldung.py            POST /api/anmelden, /api/abmelden, /api/passwort
 │  │   ├─ stammdaten.py           GET  /api/projekte, /api/gewerke, /api/einheiten
 │  │   ├─ berichte.py             Aufnahme → Entwurf → Rückfrage → Bestätigung
 │  │   └─ export.py               POST /api/export
@@ -68,7 +68,7 @@ Sprachagent-/
 │  ├─ statisch/                   index.html, app.js, stil.css, sw.js, manifest
 │  └─ cli.py                      stammdaten-laden · mappe-befuellen · benutzer-anlegen
 ├─ konfiguration/
-│  ├─ benutzer.yaml               Name, Rolle, PIN-Hash, Excel-Name
+│  ├─ benutzer.yaml               Anmeldename, Rolle, Passwort-Hash, Excel-Name
 │  ├─ projekte.yaml               Projekt → Mappenpfad
 │  └─ einheiten.yaml              zulässige Einheiten + Synonyme
 ├─ referenz/                      Bauablaufmappe (Analysegrundlage)
@@ -244,14 +244,14 @@ gehalten wird.
 
 | Thema | Umsetzung |
 |---|---|
-| Anmeldung | Name + PIN, bcrypt (D-11) |
+| Anmeldung | Anmeldename + Passwort (min. 10 Zeichen), Argon2id (D-11) |
 | Session | signiertes Cookie, `HttpOnly`, `Secure`, `SameSite=Lax`, 30 Tage rollierend |
 | Geheimnisse | ausschließlich `.env`; `.env` und `konfiguration/*.yaml` in `.gitignore` |
-| Zugriff | jeder Endpunkt hinter Authentifizierung; Berichte nur eigene, außer Rolle `bauleiter` |
+| Zugriff | jeder Endpunkt hinter Authentifizierung; Stammdaten erst **nach** Anmeldung — die App ist öffentlich erreichbar (D-10) und darf die Belegschaft nicht preisgeben; Berichte nur eigene, außer Rolle `bauleiter` |
 | Eingaben | Pydantic an der Grenze; Dateigröße und MIME-Typ des Audios begrenzt |
-| Protokolle | keine PIN, kein Audio, keine Transkripte auf `INFO`; Fehler mit Vorgangs-ID statt Inhalt |
+| Protokolle | kein Passwort, kein Audio, keine Transkripte auf `INFO`; Fehler mit Vorgangs-ID statt Inhalt |
 | Audio | nach erfolgreicher Transkription gelöscht (D-09) |
-| Ratenbegrenzung | Anmeldung und Aufnahme je Nutzer gedeckelt |
+| Ratenbegrenzung | Anmeldung je Konto **und** je IP; Aufnahme je Nutzer gedeckelt |
 | Datenschutz | Nutzung ausschließlich zur Leistungsdokumentation; keine Auswertung des Arbeitsverhaltens |
 
 ---

@@ -67,12 +67,15 @@ Testexemplar lässt die Geometrieprüfung fehlschlagen.
 
 ## EPIC 01 · Benutzer und Anmeldung — P1 · 1,5 PT
 
-Anmeldung mit Name + PIN, bcrypt, signiertes Cookie, Ratenbegrenzung, Rollen,
-Befehl `benutzer-anlegen`. Jeder Benutzer trägt seinen `excel_name`.
+Anmeldung mit Anmeldename + Passwort, Argon2id, signiertes Cookie,
+Ratenbegrenzung je Konto und je IP, erzwungener Wechsel des Einmalpassworts,
+Rollen, Befehle `benutzer-anlegen` und `benutzer-passwort-neu`. Jeder Benutzer
+trägt seinen `excel_name`, der **nicht** der Anmeldename ist.
 
-**Fertig, wenn:** Session überlebt Neustart und Browserneustart; falsche PIN
-wird verzögert; kein Endpunkt ist ohne Anmeldung erreichbar; kein PIN in einem
-Protokoll auffindbar.
+**Fertig, wenn:** Session überlebt Neustart und Browserneustart; falsches
+Passwort wird verzögert; unbekanntes Konto und falsches Passwort erzeugen
+dieselbe Meldung in derselben Zeit; kein Endpunkt und **keine Mitarbeiterliste**
+ist ohne Anmeldung erreichbar; kein Passwort in einem Protokoll auffindbar.
 
 ---
 
@@ -246,15 +249,14 @@ und Pilot (12, 11, 13).
 
 | ID | Frage | Blockiert |
 |---|---|---|
-| **D-10** | Tailscale, Cloudflare Tunnel oder eigene Domain? | EPIC 02 (ohne HTTPS kein Mikrofon) **und EPIC 01** (PIN-Länge, ggf. Gerätebindung: bis zu +1 PT) |
 | **D-09** | AVV für die Transkription, oder lokal starten? | EPIC 03, Pilotbeginn |
 | **D-02** | Mengen als Text in Spalte I, oder rechenbar? | EPIC 08/09, Umfang |
 | **D-03** | Abgeleiteter Regelbeginn zulässig? | EPIC 04/05, Dialoggestaltung |
 
-D-02 und D-03 blockieren Sprint 1 nicht — das Datenmodell trägt beide Varianten.
-**D-10 und D-09 müssen vor Sprint 2 beantwortet sein.**
+**D-10 ist entschieden** (öffentlich erreichbare Web-App mit Anmeldename und
+Passwort) und blockiert nichts mehr. Die Wahl zwischen Cloudflare Tunnel und
+eigener Domain ist eine reine Betriebsfrage und berührt den Code nicht.
 
-Bei D-10 ist die Vorarbeit erledigt: Alle drei Wege sind in
-`docs/BETRIEB-ZUGANG.md` mit lauffähiger Konfiguration ausgearbeitet, die App
-wird proxy-neutral gebaut. Offen ist allein die Wahl — und die hängt an einer
-nichttechnischen Frage: **Diensthandys oder private Handys?**
+D-02 und D-03 blockieren Sprint 1 nicht — das Datenmodell trägt beide
+Varianten. **D-09 sollte vor dem Pilotbetrieb mit echten Aufnahmen geklärt
+sein.**

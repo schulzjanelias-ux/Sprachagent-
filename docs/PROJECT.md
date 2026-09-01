@@ -93,7 +93,7 @@ beides und ordnet die Tätigkeit einem Gewerk zu (`docs/EXCEL-MAPPING.md` §6).
 
 **Enthalten**
 
-1. Anmeldung, Mitarbeiter eindeutig identifiziert
+1. Anmeldung mit Anmeldename und Passwort, Mitarbeiter eindeutig identifiziert
 2. Bauvorhaben aus Auswahlliste
 3. Sprachaufnahme im Browser (iOS Safari, Android Chrome)
 4. Transkription über austauschbares Anbieter-Interface
@@ -185,11 +185,12 @@ Vollständig mit Optionen und Empfehlung in `docs/DECISIONS.md`:
 | **D-02** | Wohin mit Menge und Einheit? | Datenmodell, Export |
 | **D-03** | Anfang/Ende erfassen statt Stundenzahl? | Sprachdialog, UX |
 | **D-09** | Transkription in der Cloud oder im Haus? | Datenschutz, Betrieb |
-| **D-10** | Tailscale, Cloudflare Tunnel oder eigene Domain? | Nutzbarkeit überhaupt, **und** der Umfang der Anmeldung (D-11) |
 
-D-10 ist kein Betriebsdetail: Ohne HTTPS geben iOS und Android das Mikrofon
-nicht frei. Da die Erfassung **auf der Baustelle** stattfindet, scheidet die
-billigste Lösung — nur im Firmen-WLAN erreichbar — aus. Drei Wege sind in
-`docs/BETRIEB-ZUGANG.md` mit Konfiguration und Prüfprotokoll ausgearbeitet;
-die Wahl bestimmt über D-11 auch die Länge der PIN und damit den Aufwand
-von EPIC 01.
+**D-10 ist entschieden:** öffentlich erreichbare Web-App mit Anmeldename und
+Passwort, kein VPN, kein Client auf dem Handy. Damit ist der letzte Blocker
+ausgeräumt. Cloudflare Tunnel und eigene Domain sind beide möglich und in
+`docs/BETRIEB-ZUGANG.md` konfiguriert; die App ist proxy-neutral und läuft
+hinter beiden unverändert.
+
+Weil die App öffentlich erreichbar ist, zeigt die Anmeldemaske **keine
+Mitarbeiterliste** mehr — der Name wird getippt (D-11).
