@@ -61,6 +61,7 @@ Sprachagent-/
 │  │   ├─ einheiten.py            Normalisierung auf die zentrale Liste
 │  │   ├─ datum.py                „gestern", „letzten Freitag" → date
 │  │   ├─ vollstaendigkeit.py     Lückenprüfung, Formulierung der Rückfrage
+│  │   ├─ dialog.py               Rundenführung, Zusammenfassung
 │  │   └─ excel/
 │  │       ├─ geometrie.py        Datum/Slot → Zeile, Geometrieprüfung
 │  │       ├─ leser.py            Stammdaten aus der Mappe lesen
@@ -184,6 +185,29 @@ Wiederholung (Brief §21 L) gefährlich.
 
 **Kein stiller Fehlschlag.** Jede Antwort trägt einen Zustand, den das Frontend
 anzeigt. Der Mitarbeiter sieht immer, ob sein Bericht angekommen ist (Brief §28).
+
+### Der Rückfragedialog
+
+Fehlende Angaben werden zu **einer** Frage gebündelt, nicht zu einer je Feld
+(D-12). Zwei Positionen ohne Menge ergeben:
+
+> Wie viel habt ihr bei Spachtelarbeiten und Schleifarbeiten geschafft?
+
+Die Antwort wird den offenen Positionen zugeordnet — zuerst über den Namen der
+Tätigkeit (`gespachtelt` trifft `Spachtelarbeiten`), sonst der Reihe nach, aber
+nur wenn die Anzahl genau aufgeht. Bleibt es mehrdeutig, wird **nichts geraten**;
+die Lücke bleibt offen.
+
+Zwei Eigenschaften, die den Dialog vor sich selbst schützen:
+
+- **Bestätigtes wird nie überschrieben.** Eine unglückliche zweite Aufnahme darf
+  eine klare Angabe aus der ersten nicht verdrängen.
+- **Nach zwei Runden ist Schluss.** Was dann noch fehlt, wird markiert und von
+  Hand ergänzt. Ein Dialog, der länger dauert als das Formular, das er ersetzen
+  soll, hat sein Ziel verfehlt.
+
+Schlägt die Auswertung der Antwort fehl, bleibt der bisherige Entwurf erhalten
+und der Mitarbeiter bekommt einen Hinweis — der Stand geht nie verloren.
 
 ---
 
