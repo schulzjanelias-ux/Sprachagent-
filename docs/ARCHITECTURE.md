@@ -88,17 +88,18 @@ gesagt wurde), `exportlauf` und `exportzuordnung` (was ist in welcher Mappe
 gelandet — verhindert Doppelbuchungen, R-06 im Mapping).
 
 ```
-mitarbeiter          projekte                einheiten
-─────────────        ──────────────          ──────────
-id                   id                      code        'm²'
-anzeigename          name                    bezeichnung 'Quadratmeter'
-excel_name  ─┐       mappe_pfad              synonyme    ['qm','m2',…]
-pin_hash     │       baubeginn               aktiv
-rolle        │       bauende
-regelbeginn  │       aktiv
+mitarbeiter          projekte
+─────────────        ──────────────
+id                   id                      Einheiten liegen NICHT in der
+anmeldename          name                    Datenbank, sondern in
+anzeigename          mappe_pfad              konfiguration/einheiten.yaml.
+excel_name  ─┐       baubeginn               Eine zweite Quelle waere eine
+passwort_hash│       bauende                 Fehlerquelle ohne Gewinn (D-07).
+rolle        │       aktiv
+regelbeginn  │
 aktiv        │
              │
-             │   tagesbericht
+             │   berichte
              │   ──────────────────────────────────────────
              └──► mitarbeiter_id
                   projekt_id
@@ -113,28 +114,39 @@ aktiv        │
                        │
         ┌──────────────┼──────────────┬────────────────┐
         ▼              ▼              ▼                ▼
-  bericht_position  anwesenheit  dialogschritt   exportzuordnung
-  ────────────────  ───────────  ─────────────   ───────────────
-  taetigkeit        beginn       rolle           exportlauf_id
-  beschreibung      ende         transkript      ziel_zeile
-  menge  Decimal    quelle       audio_dauer     ziel_slot
-  einheit_code      (gesprochen| erstellt_am     eingespielt_am
-  gewerk            abgeleitet)
-  geschaetzt  bool
-  konfidenz   float
-  reihenfolge
+  positionen        anwesenheiten  dialogschritte  exportzuordnungen
+  ────────────────  ─────────────  ──────────────  ─────────────────
+  taetigkeit        gewerk         sprecher        exportlauf_id
+  beschreibung      beginn         text            bericht_id
+  menge  Decimal    ende           audio_dauer     ziel_zeile
+  einheit_code      quelle         erstellt_am     ziel_slot
+  geschaetzt  bool  (gesprochen|
+  konfidenz   float  abgeleitet|
+  reihenfolge        korrigiert)
 ```
 
 Entwurfsentscheidungen:
 
 - **`menge` ist `Decimal`, nie `float`.** Abrechnungsnahe Werte.
-- **`gewerk` sitzt an der Position, nicht am Bericht.** Ein Mitarbeiter kann
+- **`gewerk` sitzt an der Anwesenheit, nicht am Bericht.** Ein Mitarbeiter kann
   vormittags Trockenbau und nachmittags Maler machen — und genau danach rechnet
-  `Eigenleistung` ab.
+  `Eigenleistung` ab. Jede Anwesenheit ist genau eine Zeile in der Mappe.
 - **`konfidenz` je Position.** Brief §8: Unsicherheit muss sichtbar werden.
 - **`quelle` in `anwesenheit`.** Macht abgeleitete Zeiten (D-03) im Nachhinein
   unterscheidbar.
 - **Nie hart löschen.** Storno und Versionierung statt `DELETE` (D-13).
+- **Der Exportlauf ist je Zielzeile eindeutig, nicht je Bericht.** Wer an einem
+  Tag zwei Gewerke gearbeitet hat, belegt zwei Zeilen und erscheint zweimal im
+  selben Lauf. Eine Regel auf (Lauf, Bericht) verbietet genau den Fall, der die
+  Eigenleistung erst richtig rechnen lässt — das ist beim Ende-zu-Ende-Test
+  aufgefallen, nicht beim Entwurf.
+- **SQLite braucht zwei Einstellungen je Verbindung**, die es nicht von selbst
+  mitbringt: `PRAGMA foreign_keys=ON` (sonst wird gar nichts geprüft) und
+  `journal_mode=WAL` (sonst blockiert ein Exportlauf jede Erfassung).
+- **Mengen als Text, nicht als `NUMERIC`.** SQLite kennt kein `Decimal`;
+  SQLAlchemys `Numeric` weicht dort auf `float` aus und verliert `12,5` oder
+  `0,1`. Bei abrechnungsnahen Werten ist das nicht hinnehmbar — deshalb
+  `DezimalAlsText`.
 
 ---
 
