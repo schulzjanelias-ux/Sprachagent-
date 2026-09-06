@@ -444,6 +444,7 @@ Repository später öffentlich werden, sind sie mit demselben Skript ersetzbar.
 | T-02 | Keine Mandantentrennung auf DB-Ebene | ein Unternehmen, ein Server | bei Mehrfirmenbetrieb |
 | T-03 | Export ist synchron | Sekunden bei realistischen Mengen | ab ~10.000 Berichten je Lauf |
 | T-04 | Kein Offline-Sprachmodell im Browser | unrealistisch für den MVP | — |
+| T-06 | Fehlversuchszähler liegt im Arbeitsspeicher, nicht in der Datenbank | Ein Prozess, 28 Nutzer — eine Tabelle wäre Aufwand ohne Gewinn. Ein Neustart setzt die Zähler zurück, aber den kann ein Angreifer nicht auslösen | sobald die App auf mehreren Prozessen läuft |
 | T-05 | Kein Migrationswerkzeug — das Schema entsteht über `create_all` | Solange keine Echtdaten liegen, ist ein Schemawechsel ein Neuanlegen. Alembic jetzt einzuführen wäre Aufwand ohne Nutzen | **vor dem Pilotbetrieb**, sobald die erste echte Erfassung in der Datenbank steht |
 
 ## Später, nicht jetzt

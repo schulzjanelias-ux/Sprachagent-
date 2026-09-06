@@ -42,8 +42,9 @@ Sprachagent-/
 │  ├─ sicherheit.py               Passwortprüfung, Cookie, Ratenbegrenzung
 │  ├─ abhaengigkeiten.py          aktueller Benutzer, Projektzugriff
 │  ├─ routen/
-│  │   ├─ anmeldung.py            POST /api/anmelden, /api/abmelden, /api/passwort
+│  │   ├─ anmeldung.py            POST /api/anmelden|abmelden|passwort, GET /api/ich
 │  │   ├─ stammdaten.py           GET  /api/projekte, /api/gewerke, /api/einheiten
+│  │   │                          (alle erst nach Anmeldung, D-11)
 │  │   ├─ berichte.py             Aufnahme → Entwurf → Rückfrage → Bestätigung
 │  │   └─ export.py               POST /api/export
 │  ├─ dienste/
@@ -257,13 +258,14 @@ gehalten wird.
 | Thema | Umsetzung |
 |---|---|
 | Anmeldung | Anmeldename + Passwort (min. 10 Zeichen), Argon2id (D-11) |
-| Session | signiertes Cookie, `HttpOnly`, `Secure`, `SameSite=Lax`, 30 Tage rollierend |
+| Session | signiertes Cookie, `HttpOnly`, `Secure`, `SameSite=Lax`, 30 Tage. Eine `sitzungs_kennung` je Konto beendet bei Passwortwechsel **alle** laufenden Sitzungen, auch auf anderen Geräten |
 | Geheimnisse | ausschließlich `.env`; `.env` und `konfiguration/*.yaml` in `.gitignore` |
 | Zugriff | jeder Endpunkt hinter Authentifizierung; Stammdaten erst **nach** Anmeldung — die App ist öffentlich erreichbar (D-10) und darf die Belegschaft nicht preisgeben; Berichte nur eigene, außer Rolle `bauleiter` |
 | Eingaben | Pydantic an der Grenze; Dateigröße und MIME-Typ des Audios begrenzt |
 | Protokolle | kein Passwort, kein Audio, keine Transkripte auf `INFO`; Fehler mit Vorgangs-ID statt Inhalt |
 | Audio | nach erfolgreicher Transkription gelöscht (D-09) |
-| Ratenbegrenzung | Anmeldung je Konto **und** je IP; Aufnahme je Nutzer gedeckelt |
+| Ratenbegrenzung | Anmeldung je Konto **und** je IP: Verzögerung ab 3 Fehlversuchen, Sperre nach 10 für 15 Minuten. Nur je Konto ließe das Durchprobieren vieler Konten zu, nur je Adresse das aus einem Botnetz |
+| Kein Konten-Orakel | Unbekanntes Konto und falsches Passwort erzeugen dieselbe Meldung **und** dieselbe Rechenzeit — gegen einen nicht existierenden Nutzer wird ein Blindhash geprüft |
 | Datenschutz | Nutzung ausschließlich zur Leistungsdokumentation; keine Auswertung des Arbeitsverhaltens |
 
 ---

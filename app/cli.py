@@ -22,6 +22,10 @@ from app.dienste.strukturierung import (
 from app.dienste.transkription import (
     TranskriptionsFehler, transkribierer_erzeugen, vokabular_zusammenstellen,
 )
+from app.modelle import Mitarbeiter, Projekt, Rolle
+from app.sicherheit import (
+    einmalpasswort, passwort_bewerten, passwort_hashen, sitzungs_kennung_erzeugen,
+)
 
 
 def berichte_aus_json(pfad: Path) -> list[Tagesbericht]:
@@ -196,6 +200,106 @@ def befehl_mappe_befuellen(argumente) -> int:
     return 0
 
 
+def befehl_benutzer_anlegen(argumente) -> int:
+    """Konto mit Einmalpasswort anlegen (D-11).
+
+    Das Passwort wird einmal ausgegeben und nirgends gespeichert - nur sein
+    Hash. Beim ersten Anmelden muss der Mitarbeiter es wechseln.
+    """
+    from app.datenbank import einrichten, sitzung as datenbank_sitzung
+    from sqlalchemy import func, select
+
+    einrichten()
+    with datenbank_sitzung() as sitzung:
+        vorhanden = sitzung.scalar(select(Mitarbeiter).where(
+            func.lower(Mitarbeiter.anmeldename) == argumente.anmeldename.lower()))
+        if vorhanden is not None:
+            print(f"Der Anmeldename {argumente.anmeldename!r} ist bereits vergeben.",
+                  file=sys.stderr)
+            return 1
+
+        passwort = argumente.passwort or einmalpasswort()
+        if argumente.passwort and (gruende := passwort_bewerten(passwort)):
+            print(" ".join(gruende), file=sys.stderr)
+            return 1
+
+        sitzung.add(Mitarbeiter(
+            anmeldename=argumente.anmeldename,
+            anzeigename=argumente.anzeigename,
+            excel_name=argumente.excel_name,
+            passwort_hash=passwort_hashen(passwort),
+            passwort_wechseln=True,
+            rolle=Rolle(argumente.rolle),
+            regelbeginn=time.fromisoformat(argumente.regelbeginn) if argumente.regelbeginn else None,
+            sitzungs_kennung=sitzungs_kennung_erzeugen()))
+
+    print(f"Konto angelegt: {argumente.anmeldename}")
+    print(f"Einmalpasswort: {passwort}")
+    print("\nDieses Passwort wird nicht gespeichert und nicht erneut angezeigt.")
+    print("Der Mitarbeiter muss es bei der ersten Anmeldung wechseln.")
+    return 0
+
+
+def befehl_benutzer_passwort_neu(argumente) -> int:
+    """Passwort zuruecksetzen. Nur ueber die Bauleitung - kein Weg per E-Mail."""
+    from app.datenbank import einrichten, sitzung as datenbank_sitzung
+    from sqlalchemy import func, select
+
+    einrichten()
+    with datenbank_sitzung() as sitzung:
+        mitarbeiter = sitzung.scalar(select(Mitarbeiter).where(
+            func.lower(Mitarbeiter.anmeldename) == argumente.anmeldename.lower()))
+        if mitarbeiter is None:
+            print(f"Kein Konto mit dem Anmeldenamen {argumente.anmeldename!r}.",
+                  file=sys.stderr)
+            return 1
+
+        passwort = einmalpasswort()
+        mitarbeiter.passwort_hash = passwort_hashen(passwort)
+        mitarbeiter.passwort_wechseln = True
+        # Beendet alle laufenden Sitzungen, auch auf anderen Geraeten.
+        mitarbeiter.sitzungs_kennung = sitzungs_kennung_erzeugen()
+
+    print(f"Passwort zurueckgesetzt: {argumente.anmeldename}")
+    print(f"Einmalpasswort: {passwort}")
+    print("\nAlle bisherigen Sitzungen dieses Kontos sind damit beendet.")
+    return 0
+
+
+def befehl_projekt_anlegen(argumente) -> int:
+    """Projekt mit Verweis auf seine Bauablaufmappe eintragen."""
+    from app.datenbank import einrichten, sitzung as datenbank_sitzung
+    from sqlalchemy import select
+
+    mappe = Path(argumente.mappe).resolve()
+    try:
+        stammdaten = stammdaten_lesen(mappe)
+    except MappenFehler as fehler:
+        print(f"Mappe nicht verwendbar: {fehler}", file=sys.stderr)
+        return 1
+
+    if stammdaten.bauvorhaben and stammdaten.bauvorhaben != argumente.name:
+        print(f"Die Mappe gehoert zum Bauvorhaben {stammdaten.bauvorhaben!r}, "
+              f"angegeben wurde {argumente.name!r} (D-04).", file=sys.stderr)
+        return 1
+
+    einrichten()
+    with datenbank_sitzung() as sitzung:
+        if sitzung.scalar(select(Projekt).where(Projekt.name == argumente.name)):
+            print(f"Projekt {argumente.name!r} ist bereits eingetragen.", file=sys.stderr)
+            return 1
+        sitzung.add(Projekt(name=argumente.name, mappe_pfad=str(mappe),
+                            baubeginn=stammdaten.baubeginn, bauende=stammdaten.bauende))
+
+    print(f"Projekt angelegt: {argumente.name}")
+    print(f"Mappe   : {mappe}")
+    print(f"Bauzeit : {stammdaten.baubeginn or '—'} bis {stammdaten.bauende or '—'}")
+    if not stammdaten.bauzeit_gesetzt:
+        print("\nHinweis: Ohne Baubeginn und Bauende in der Mappe ist kein "
+              "Export moeglich.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     zerleger = argparse.ArgumentParser(
         prog="app.cli", description="HAG Tagesbericht — Werkzeuge")
@@ -228,6 +332,29 @@ def main(argv: list[str] | None = None) -> int:
     aus_audio.add_argument("--heute", help="Erfassungstag ueberschreiben (JJJJ-MM-TT)")
     aus_audio.add_argument("--regelbeginn", help="Regelarbeitsbeginn, z. B. 07:00 (D-03)")
     aus_audio.set_defaults(funktion=befehl_bericht_aus_audio)
+
+    anlegen = unterbefehle.add_parser(
+        "benutzer-anlegen", help="Konto mit Einmalpasswort anlegen")
+    anlegen.add_argument("anmeldename")
+    anlegen.add_argument("--anzeigename", required=True)
+    anlegen.add_argument("--excel-name", dest="excel_name", required=True,
+                         help="Name wortgleich aus MitarbeiterListe der Mappe")
+    anlegen.add_argument("--rolle", default="mitarbeiter",
+                         choices=[r.value for r in Rolle])
+    anlegen.add_argument("--regelbeginn", help="z. B. 07:00 (D-03)")
+    anlegen.add_argument("--passwort", help="statt eines erzeugten Einmalpassworts")
+    anlegen.set_defaults(funktion=befehl_benutzer_anlegen)
+
+    zuruecksetzen = unterbefehle.add_parser(
+        "benutzer-passwort-neu", help="Passwort zuruecksetzen (Bauleitung)")
+    zuruecksetzen.add_argument("anmeldename")
+    zuruecksetzen.set_defaults(funktion=befehl_benutzer_passwort_neu)
+
+    projekt = unterbefehle.add_parser(
+        "projekt-anlegen", help="Projekt mit seiner Bauablaufmappe eintragen")
+    projekt.add_argument("name")
+    projekt.add_argument("--mappe", required=True)
+    projekt.set_defaults(funktion=befehl_projekt_anlegen)
 
     argumente = zerleger.parse_args(argv)
     return argumente.funktion(argumente)

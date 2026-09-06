@@ -14,6 +14,8 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import einstellungen, protokollierung_einrichten
+from app.datenbank import einrichten as datenbank_einrichten
+from app.routen import anmeldung, stammdaten
 
 protokoll = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ async def lebenszyklus(app: FastAPI):
 
     e.datenbank_pfad.parent.mkdir(parents=True, exist_ok=True)
     e.export_verzeichnis.mkdir(parents=True, exist_ok=True)
+    datenbank_einrichten()
 
     yield
 
@@ -43,6 +46,10 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+
+
+app.include_router(anmeldung.router)
+app.include_router(stammdaten.router)
 
 
 @app.get("/api/status")

@@ -85,6 +85,10 @@ class Mitarbeiter(Basis):
     excel_name: Mapped[str] = mapped_column(String(120))
     passwort_hash: Mapped[str] = mapped_column(String(255))
     passwort_wechseln: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Wird bei jedem Passwortwechsel neu gesetzt. Damit werden alle noch
+    # laufenden Sitzungen ungueltig - wer ein Passwort aendert, weil es
+    # kompromittiert war, will genau das.
+    sitzungs_kennung: Mapped[str] = mapped_column(String(32), default="")
     rolle: Mapped[Rolle] = mapped_column(Enum(Rolle), default=Rolle.mitarbeiter)
     regelbeginn: Mapped[time | None] = mapped_column(Time, default=None)
     aktiv: Mapped[bool] = mapped_column(Boolean, default=True)
