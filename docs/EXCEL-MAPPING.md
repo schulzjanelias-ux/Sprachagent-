@@ -287,11 +287,23 @@ beschrieben.** Der Export erzeugt drei Artefakte:
 
 | Artefakt | Zweck | Format |
 |---|---|---|
-| `tagesberichte_<projekt>_<von>_<bis>.xlsx` | Prüfen und Freigeben durch das Büro | strukturiert, inkl. Menge/Einheit, je Position eine Zeile |
-| `tagesberichte_<projekt>_<von>_<bis>.csv` | maschinelle Weiterverarbeitung | UTF-8 mit BOM, `;`-getrennt, deutsche Dezimalkommas |
+| `tagesberichte_<projekt>_<von>_<bis>.xlsx` | Prüfen und Freigeben durch das Büro | drei Blätter: `Berichte`, `Leistungen`, `Arbeitszeiten` |
+| `…_leistungen.csv` | maschinelle Weiterverarbeitung | UTF-8 mit BOM, `;`-getrennt, Dezimalkomma |
+| `…_arbeitszeiten.csv` | dito | dito |
 | `<mappe>_befuellt_<zeitstempel>.xlsx` | einspielbare **Kopie** der Bauablaufmappe | zellgenau befüllt, Medien wiederhergestellt |
 
-Das dritte Artefakt entsteht über den Befehl `mappe-befuellen`:
+**Warum drei Blätter statt einer breiten Tabelle:** Ein Bericht hat mehrere
+Leistungspositionen *und* mehrere Zeitfenster. In einer flachen Tabelle mit
+beidem stünden die Stunden mehrfach — und die erste Person, die die Spalte
+aufsummiert, bekäme ein falsches Ergebnis. Die Bericht-Kennung verbindet die
+Blätter. Aus demselben Grund gibt es zwei CSV-Dateien statt einer.
+
+Mengen und Stunden stehen im XLSX als **Zahlen**, nicht als Text — im Büro
+soll gerechnet werden können, ohne vorher umzuwandeln. In den CSV-Dateien
+steht das deutsche Dezimalkomma.
+
+Alles zusammen erzeugt der Befehl `export`; `mappe-befuellen` macht denselben
+Schritt für Berichte aus einer JSON-Datei:
 
 1. Meistermappe wird **kopiert**, das Original nie geöffnet-und-gespeichert
 2. Vorprüfung: Bauvorhaben stimmt überein, Baubeginn/Bauende gesetzt,

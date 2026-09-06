@@ -12,8 +12,10 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 
+from app.config import einstellungen
 from app.dienste.berichte import Leistung, Tagesbericht, Zeitfenster
 from app.dienste.einheiten import codes as einheiten_codes
+from app.dienste.excel import export as strukturierter_export
 from app.dienste.excel.befueller import mappe_befuellen
 from app.dienste.excel.leser import MappenFehler, stammdaten_lesen
 from app.dienste.strukturierung import (
@@ -200,6 +202,85 @@ def befehl_mappe_befuellen(argumente) -> int:
     return 0
 
 
+def befehl_export(argumente) -> int:
+    """Bestaetigte Berichte eines Projekts ausgeben.
+
+    Erzeugt drei Artefakte (docs/EXCEL-MAPPING.md §7):
+      1. strukturiertes XLSX mit Berichten, Leistungen und Arbeitszeiten
+      2. zwei CSV-Dateien fuer die maschinelle Weiterverarbeitung
+      3. eine befuellte **Kopie** der Bauablaufmappe
+
+    Die Meistermappe wird nie beschrieben (D-01). Erfolgreich eingespielte
+    Berichte werden protokolliert, damit ein zweiter Lauf die Stunden nicht
+    verdoppelt (M-6).
+    """
+    from app.ablage import berichte_fuer_export, exportlauf_protokollieren
+    from app.datenbank import einrichten, sitzung as datenbank_sitzung
+    from sqlalchemy import select
+
+    von = date.fromisoformat(argumente.von) if argumente.von else None
+    bis = date.fromisoformat(argumente.bis) if argumente.bis else None
+
+    einrichten()
+    with datenbank_sitzung() as sitzung:
+        projekt = sitzung.scalar(
+            select(Projekt).where(Projekt.name == argumente.projekt))
+        if projekt is None:
+            print(f"Kein Projekt namens {argumente.projekt!r}. Anlegen mit "
+                  f"projekt-anlegen.", file=sys.stderr)
+            return 1
+
+        berichte = berichte_fuer_export(
+            sitzung, projekt.id, von=von, bis=bis,
+            ohne_bereits_exportierte=not argumente.erneut)
+
+        if not berichte:
+            print("Keine noch nicht exportierten Berichte in diesem Zeitraum.")
+            return 0
+
+        print(f"{len(berichte)} Berichte, "
+              f"{sum(len(b.leistungen) for b in berichte)} Leistungspositionen, "
+              f"{sum(len(b.zeitfenster) for b in berichte)} Arbeitszeiten")
+
+        verzeichnis = Path(argumente.verzeichnis or einstellungen().export_verzeichnis)
+        mappe = Path(projekt.mappe_pfad)
+        ziel_mappe = verzeichnis / (
+            f"{mappe.stem}_befuellt_{datetime.now():%Y-%m-%d_%H%M%S}.xlsx")
+
+        try:
+            plan = mappe_befuellen(mappe, ziel_mappe, berichte,
+                                   bauvorhaben_erwartet=projekt.name,
+                                   probelauf=argumente.probelauf)
+        except MappenFehler as fehler:
+            print(f"Abbruch: {fehler}", file=sys.stderr)
+            return 1
+
+        print()
+        print(plan.bericht())
+        if plan.fehler:
+            print("\nEs wurde nichts geschrieben und nichts protokolliert.",
+                  file=sys.stderr)
+            return 1
+
+        if argumente.probelauf:
+            print("\nProbelauf — es wurde nichts geschrieben.")
+            return 0
+
+        dateien = strukturierter_export.schreiben(
+            berichte, verzeichnis, bauvorhaben=projekt.name, von=von, bis=bis)
+
+        exportlauf_protokollieren(
+            sitzung, projekt_id=projekt.id, ziel_datei=str(ziel_mappe),
+            zuordnungen=[(z.bericht_id, z.zeile, z.slot) for z in plan.zuordnungen],
+            von=von, bis=bis)
+
+    print("\nErzeugt:")
+    for pfad in [ziel_mappe, *dateien.alle()]:
+        print(f"  {pfad}")
+    print("\nDie Meistermappe wurde nicht veraendert.")
+    return 0
+
+
 def befehl_benutzer_anlegen(argumente) -> int:
     """Konto mit Einmalpasswort anlegen (D-11).
 
@@ -355,6 +436,18 @@ def main(argv: list[str] | None = None) -> int:
     projekt.add_argument("name")
     projekt.add_argument("--mappe", required=True)
     projekt.set_defaults(funktion=befehl_projekt_anlegen)
+
+    ausgeben = unterbefehle.add_parser(
+        "export", help="Bestaetigte Berichte ausgeben und Mappenkopie befuellen")
+    ausgeben.add_argument("--projekt", required=True)
+    ausgeben.add_argument("--von", help="JJJJ-MM-TT")
+    ausgeben.add_argument("--bis", help="JJJJ-MM-TT")
+    ausgeben.add_argument("--verzeichnis", help="Ausgabeverzeichnis")
+    ausgeben.add_argument("--probelauf", action="store_true",
+                          help="nur pruefen, nichts schreiben und nichts protokollieren")
+    ausgeben.add_argument("--erneut", action="store_true",
+                          help="auch bereits exportierte Berichte einbeziehen")
+    ausgeben.set_defaults(funktion=befehl_export)
 
     argumente = zerleger.parse_args(argv)
     return argumente.funktion(argumente)

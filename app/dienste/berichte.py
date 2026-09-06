@@ -50,6 +50,9 @@ class Tagesbericht:
     zeitfenster: tuple[Zeitfenster, ...] = ()
     leistungen: tuple[Leistung, ...] = ()
     bemerkung: str | None = None
+    # Briefing §6: raw_transcript. Nachweis dessen, was gesprochen wurde -
+    # das Audio selbst wird nach der Transkription geloescht (D-09).
+    transkript: str | None = None
 
     @property
     def benoetigte_slots(self) -> int:

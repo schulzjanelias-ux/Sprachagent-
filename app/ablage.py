@@ -196,6 +196,7 @@ def _als_werteobjekt(bericht: Bericht) -> werte.Tagesbericht:
                            geschaetzt=p.geschaetzt)
             for p in bericht.positionen),
         bemerkung=bericht.bemerkung,
+        transkript=bericht.rohtranskript,
     )
 
 

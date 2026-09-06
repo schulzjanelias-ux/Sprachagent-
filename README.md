@@ -29,6 +29,25 @@ befüllt werden ausschließlich Kopien.
 | [`docs/MVP-BACKLOG.md`](docs/MVP-BACKLOG.md) | Epics, Aufwände, Sprint 1 |
 | [`docs/BETRIEB-ZUGANG.md`](docs/BETRIEB-ZUGANG.md) | Zugangswege vom Handy, Konfiguration, Prüfprotokoll |
 
+## Befehle
+
+```bash
+# Einrichtung
+python3 -m app.cli projekt-anlegen "Musterstraße 12" --mappe /pfad/mappe.xlsx
+python3 -m app.cli benutzer-anlegen ahrens --anzeigename "M. Ahrens" \
+    --excel-name Ahrens --regelbeginn 07:00
+
+# Betrieb
+python3 -m app.cli mappe-pruefen  /pfad/mappe.xlsx
+python3 -m app.cli export --projekt "Musterstraße 12" --probelauf
+python3 -m app.cli export --projekt "Musterstraße 12"
+```
+
+`export` erzeugt eine befüllte **Kopie** der Bauablaufmappe, ein
+strukturiertes XLSX und zwei CSV-Dateien — und protokolliert, welcher Bericht
+in welche Zeile ging, damit ein zweiter Lauf die Stunden nicht verdoppelt.
+Die Meistermappe wird nie beschrieben.
+
 ## Analyse nachvollziehen
 
 ```bash
