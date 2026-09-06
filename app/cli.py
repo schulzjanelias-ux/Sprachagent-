@@ -13,8 +13,15 @@ from decimal import Decimal
 from pathlib import Path
 
 from app.dienste.berichte import Leistung, Tagesbericht, Zeitfenster
+from app.dienste.einheiten import codes as einheiten_codes
 from app.dienste.excel.befueller import mappe_befuellen
 from app.dienste.excel.leser import MappenFehler, stammdaten_lesen
+from app.dienste.strukturierung import (
+    Kontext, StrukturierungsFehler, entwurf_erzeugen,
+)
+from app.dienste.transkription import (
+    TranskriptionsFehler, transkribierer_erzeugen, vokabular_zusammenstellen,
+)
 
 
 def berichte_aus_json(pfad: Path) -> list[Tagesbericht]:
@@ -46,6 +53,99 @@ def berichte_aus_json(pfad: Path) -> list[Tagesbericht]:
             bemerkung=eintrag.get("bemerkung"),
         ))
     return berichte
+
+
+def befehl_bericht_aus_audio(argumente) -> int:
+    """Audio -> Transkript -> Entwurf. Gibt den Entwurf als JSON aus.
+
+    Damit ist die Kette Aufnahme -> befuellte Mappe schon vor der Oberflaeche
+    vollstaendig pruefbar:
+
+        bericht-aus-audio aufnahme.m4a --mappe M.xlsx > bericht.json
+        mappe-befuellen M.xlsx --berichte bericht.json --probelauf
+    """
+    audio_pfad = Path(argumente.audio)
+    if not audio_pfad.exists():
+        print(f"Aufnahme nicht gefunden: {audio_pfad}", file=sys.stderr)
+        return 1
+
+    try:
+        stammdaten = stammdaten_lesen(Path(argumente.mappe))
+    except MappenFehler as fehler:
+        print(f"Mappe nicht verwendbar: {fehler}", file=sys.stderr)
+        return 1
+
+    vokabular = vokabular_zusammenstellen(
+        stammdaten.gewerke, stammdaten.mitarbeiter, einheiten_codes())
+
+    try:
+        transkript = transkribierer_erzeugen().transkribiere(
+            audio_pfad.read_bytes(), argumente.mime, vokabular)
+    except TranskriptionsFehler as fehler:
+        print(f"Spracherkennung: {fehler}", file=sys.stderr)
+        return 1
+
+    heute = (date.fromisoformat(argumente.heute) if argumente.heute
+             else date.today())
+    kontext = Kontext(
+        heute=heute, gewerke=stammdaten.gewerke, einheiten=einheiten_codes(),
+        bauvorhaben=stammdaten.bauvorhaben,
+        regelbeginn=time.fromisoformat(argumente.regelbeginn) if argumente.regelbeginn else None)
+
+    try:
+        entwurf = entwurf_erzeugen(transkript.text, kontext)
+    except StrukturierungsFehler as fehler:
+        print(f"Auswertung: {fehler}", file=sys.stderr)
+        print(f"\nTranskript zur manuellen Erfassung:\n{transkript.text}", file=sys.stderr)
+        return 1
+
+    if argumente.mitarbeiter and argumente.mitarbeiter not in stammdaten.mitarbeiter:
+        print(f"{argumente.mitarbeiter!r} steht nicht in der Mitarbeiterliste "
+              f"der Mappe.", file=sys.stderr)
+        return 1
+
+    print(json.dumps([{
+        "bericht_id": argumente.bericht_id,
+        "datum": entwurf.datum.isoformat(),
+        "mitarbeiter": argumente.mitarbeiter,
+        "zeitfenster": ([{"gewerk": entwurf.gewerk,
+                          "beginn": entwurf.beginn.isoformat(timespec="minutes"),
+                          "ende": entwurf.ende.isoformat(timespec="minutes")}]
+                        if entwurf.gewerk and entwurf.beginn and entwurf.ende else []),
+        "leistungen": [{"taetigkeit": l.taetigkeit, "beschreibung": l.beschreibung,
+                        "menge": str(l.menge) if l.menge is not None else None,
+                        "einheit": l.einheit, "geschaetzt": l.geschaetzt}
+                       for l in entwurf.leistungen],
+        "bemerkung": entwurf.bemerkung,
+        "_transkript": entwurf.transkript,
+        "_unklarheiten": entwurf.unklarheiten,
+        "_datum_abgeleitet": entwurf.datum_abgeleitet,
+        "_zeit_abgeleitet": entwurf.zeit_abgeleitet,
+    }], ensure_ascii=False, indent=2))
+
+    # Ein Bericht ohne Gewerk oder ohne Zeiten erzeugt in der Mappe keine
+    # Zeile - und ohne Arbeitsstunden bleibt das Controlling leer (D-03).
+    # Das darf nicht stillschweigend als leeres Ergebnis durchgehen (§28).
+    fehlt = []
+    if not entwurf.gewerk:
+        fehlt.append("Gewerk")
+    if not entwurf.beginn or not entwurf.ende:
+        fehlt.append("Arbeitsanfang und -ende")
+    if not entwurf.leistungen:
+        fehlt.append("mindestens eine Leistungsposition")
+
+    if entwurf.unklarheiten or fehlt:
+        print("\nOffene Punkte (im Dialog nachzufragen):", file=sys.stderr)
+        for punkt in entwurf.unklarheiten:
+            print(f"  · {punkt}", file=sys.stderr)
+        for feld in fehlt:
+            print(f"  · Es fehlt: {feld}", file=sys.stderr)
+
+    if fehlt:
+        print("\nDer Entwurf ist unvollstaendig und wuerde in der Mappe keine "
+              "Zeile erzeugen. Rueckgabewert 2.", file=sys.stderr)
+        return 2
+    return 0
 
 
 def befehl_mappe_pruefen(argumente) -> int:
@@ -117,6 +217,17 @@ def main(argv: list[str] | None = None) -> int:
     befuellen.add_argument("--ueberschreiben", action="store_true",
                            help="bereits befuellte Zielzellen ueberschreiben")
     befuellen.set_defaults(funktion=befehl_mappe_befuellen)
+
+    aus_audio = unterbefehle.add_parser(
+        "bericht-aus-audio", help="Aufnahme transkribieren und strukturieren")
+    aus_audio.add_argument("audio")
+    aus_audio.add_argument("--mappe", required=True, help="Projektmappe fuer die Stammdaten")
+    aus_audio.add_argument("--mitarbeiter", required=True, help="Name aus der Mitarbeiterliste")
+    aus_audio.add_argument("--bericht-id", dest="bericht_id", default="TB-ENTWURF")
+    aus_audio.add_argument("--mime", default="audio/mp4")
+    aus_audio.add_argument("--heute", help="Erfassungstag ueberschreiben (JJJJ-MM-TT)")
+    aus_audio.add_argument("--regelbeginn", help="Regelarbeitsbeginn, z. B. 07:00 (D-03)")
+    aus_audio.set_defaults(funktion=befehl_bericht_aus_audio)
 
     argumente = zerleger.parse_args(argv)
     return argumente.funktion(argumente)

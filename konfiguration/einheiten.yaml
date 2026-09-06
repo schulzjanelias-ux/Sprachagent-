@@ -1,0 +1,42 @@
+# Zulaessige Leistungseinheiten (D-07).
+#
+# Die Liste ist bewusst geschlossen: Freitext-Einheiten machen jede spaetere
+# Auswertung wertlos. Was hier nicht steht, wird nicht geraten, sondern
+# erzeugt eine Rueckfrage an den Mitarbeiter.
+#
+# `synonyme` deckt ab, was Whisper aus gesprochener Sprache macht.
+# Der Vergleich laeuft ohne Beachtung von Gross-/Kleinschreibung und
+# Satzzeichen - "Stck." und "stck" treffen denselben Eintrag.
+
+einheiten:
+  - code: "m²"
+    bezeichnung: Quadratmeter
+    synonyme: [quadratmeter, qm, m2, m^2, "qm.", quadrat]
+
+  - code: "lfm"
+    bezeichnung: Laufende Meter
+    synonyme: [laufende meter, laufmeter, lfdm, lfd m, lm, laufender meter, meter]
+
+  - code: "m³"
+    bezeichnung: Kubikmeter
+    synonyme: [kubikmeter, cbm, m3, "m^3", kubik]
+
+  - code: "Stück"
+    bezeichnung: Stück
+    synonyme: [stueck, stück, stk, stck, "st.", stuecke, stücke, stk.]
+
+  - code: "kg"
+    bezeichnung: Kilogramm
+    synonyme: [kilogramm, kilo, kilos]
+
+  - code: "Liter"
+    bezeichnung: Liter
+    synonyme: [liter, ltr, "l.", litern]
+
+  - code: "Stunden"
+    bezeichnung: Stunden
+    synonyme: [stunde, stunden, std, "std.", h, arbeitsstunden]
+
+  - code: "Pauschal"
+    bezeichnung: Pauschal
+    synonyme: [pauschal, psch, "pau.", pauschale]
