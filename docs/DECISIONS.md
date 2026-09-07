@@ -218,20 +218,26 @@ keine Schlussfolgerung) und serverseitiger Pydantic-Nachvalidierung. Das Modell
 liefert nie ein Datum und nie eine normalisierte Einheit — beides rechnet der
 Code, damit es testbar bleibt.
 
-### Kosten je Tagesbericht
+### Kosten je Tagesbericht — korrigiert nach Messung
+
+Die erste Schätzung ging von rund 60 Sekunden Audio je Bericht aus,
+Rückfrage eingerechnet. **Vier echte Sprachnachrichten aus dem Betrieb dauerten
+48, 67, 76 und 82 Sekunden** — im Mittel 68 Sekunden für die *erste* Aufnahme
+allein. Mit einer Rückfragerunde sind rund 90 Sekunden realistisch, also
+anderthalbmal so viel wie angenommen.
 
 ```
-Transkription   ~60 s Audio inkl. Rückfrage       $0.006
+Transkription   ~90 s Audio inkl. Rückfrage          $0.009
 Strukturierung  ~1.250 Eingabe- / ~550 Ausgabetoken  $0.020
 Rückfragerunde  ~1.500 Eingabe- / ~550 Ausgabetoken  $0.021
-                                                  ─────────
-                                                  ~$0.047  ≈ 4–5 Cent
+                                                     ─────────
+                                                     ~$0.050  ≈ 5 Cent
 ```
 
-Hochrechnung: 20 Mitarbeiter × 250 Arbeitstage ≈ 5.000 Berichte ≈ **250–300 €
-im Jahr**, zuzüglich Wiederholungen. Das ist gegenüber der eingesparten
-Bürozeit vernachlässigbar und rechtfertigt keine Qualitätskompromisse beim
-Modell.
+Hochrechnung: 20 Mitarbeiter × 250 Arbeitstage ≈ 5.000 Berichte ≈ **250–350 €
+im Jahr**, zuzüglich Wiederholungen. Die Korrektur ändert die Größenordnung
+nicht — gegenüber der eingesparten Bürozeit bleibt das vernachlässigbar und
+rechtfertigt keine Qualitätskompromisse beim Modell.
 
 ### DECISION REQUIRED — Auftragsverarbeitung
 
@@ -432,6 +438,7 @@ Repository später öffentlich werden, sind sie mit demselben Skript ersetzbar.
 | **R-05** | KI erfindet Mengen | falsche Abrechnungsgrundlage | Schema erlaubt `null`; fehlende Menge erzeugt Rückfrage; niedrige Konfidenz wird markiert; nichts wird ohne Bestätigung gespeichert |
 | **R-06** | Kein Netz auf der Baustelle | Bericht geht verloren | Aufnahme im Browser puffern, automatisch wiederholen, Status „noch nicht gesendet" dauerhaft sichtbar |
 | **R-07** | Bauzeit über 366 Nicht-Sonntage | Gerüst reicht nicht | Export prüft die Bauzeit und meldet, dass die Mappe verlängert werden muss |
+| **R-09** | Erkennungsqualität an echter Bausprache ist **ungemessen** | Die Oberfläche würde um eine Annahme herum gebaut | Werkzeug `realitaetstest.py` liegt bereit; es fehlt nur ein API-Schlüssel. **Vor EPIC 02 nachzuholen** |
 | **R-08** | Modellantwort unbrauchbar oder abgelehnt | Bericht blockiert | Serverseitige Validierung; bei Fehler manuelles Formular mit vorausgefülltem Transkript — der Mitarbeiter kommt nie in eine Sackgasse |
 
 ---

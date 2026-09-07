@@ -48,6 +48,19 @@ strukturiertes XLSX und zwei CSV-Dateien — und protokolliert, welcher Bericht
 in welche Zeile ging, damit ein zweiter Lauf die Stunden nicht verdoppelt.
 Die Meistermappe wird nie beschrieben.
 
+## Erkennungsqualität messen
+
+```bash
+python3 werkzeuge/realitaetstest.py aufnahmen/*.ogg \
+    --mappe /pfad/mappe.xlsx --bericht ergebnis.md
+```
+
+Läuft echte Sprachaufnahmen durch Transkription, Strukturierung und
+Lückenprüfung und erzeugt einen Markdown-Bericht mit Ankreuzfeldern. Wer die
+Aufnahmen gehört hat, hakt ab, was richtig erkannt wurde — erst daraus wird
+eine belastbare Trefferquote. Ohne API-Schlüssel läuft der Test mit Attrappen
+und prüft nur, ob die Kette technisch durchläuft; er sagt das dann auch.
+
 ## Analyse nachvollziehen
 
 ```bash

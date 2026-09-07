@@ -45,7 +45,12 @@ class Einstellungen(BaseSettings):
 
     # --- Grenzwerte ------------------------------------------------------
     audio_groesse_max_mb: int = 25
-    aufnahme_sekunden_max: int = 90
+    # 180 statt der urspruenglich angesetzten 90 Sekunden. Vier echte
+    # WhatsApp-Sprachnachrichten aus dem Betrieb dauerten 48, 67, 76 und
+    # 82 Sekunden - die laengste lag acht Sekunden unter der alten Grenze.
+    # Wer etwas ausfuehrlicher spricht, waere mitten im Satz abgeschnitten
+    # worden. Bei 19,5 kbit/s Opus sind 180 Sekunden rund 440 KB.
+    aufnahme_sekunden_max: int = 180
     passwort_laenge_min: int = 10          # D-11
 
     protokoll_stufe: str = "INFO"

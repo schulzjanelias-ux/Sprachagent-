@@ -249,8 +249,20 @@ Sechs Bildschirme: Anmeldung · Projektwahl · Aufnahme · Rückfrage ·
 Bestätigung · eigene Berichte. Statisches HTML, kein Build-Schritt.
 
 **Aufnahme.** `MediaRecorder`; Android liefert WebM/Opus, iOS MP4/AAC — beides
-wird serverseitig akzeptiert und beim Anbieter konvertiert. Maximal 90 Sekunden,
-danach automatischer Stopp mit Hinweis.
+wird serverseitig akzeptiert und beim Anbieter konvertiert.
+
+**Maximal 180 Sekunden**, danach automatischer Stopp mit Hinweis. Ursprünglich
+waren 90 Sekunden vorgesehen; vier echte Sprachnachrichten aus dem Betrieb
+dauerten 48, 67, 76 und 82 Sekunden. Die längste lag acht Sekunden unter der
+alten Grenze — wer etwas ausführlicher spricht, wäre mitten im Satz
+abgeschnitten worden. Bei 19,5 kbit/s Opus sind 180 Sekunden rund 440 KB, also
+unkritisch.
+
+**Nachlauf beim Stoppen.** Dieselben Aufnahmen enden 0,00 bis 0,15 Sekunden
+nach dem letzten Wort: Menschen drücken sofort auf Stopp. Der Recorder hängt
+deshalb eine halbe Sekunde an, bevor er den Datenstrom schließt — sonst fehlt
+regelmäßig die letzte Silbe, und genau dort steht oft die Einheit
+(„…fünfundsechzig Quadratme—").
 
 **Ausgangskorb (Brief §21 L, R-06).** Jede Aufnahme landet zuerst in IndexedDB,
 danach beginnt der Versand. Automatische Wiederholung mit wachsendem Abstand;
